@@ -45,6 +45,7 @@ class _TodoListPageState extends State<TodoListPage> {
                   trailing: PopupMenuButton(
                     onSelected: (value) {
                       if (value == "edit") {
+                        navigateToEditPage(item);
                       } else if (value == "delete") {
                         deleteById(id);
                       }
@@ -71,15 +72,19 @@ class _TodoListPageState extends State<TodoListPage> {
     );
   }
 
-  void navigateToAddPage() {
+  Future<void> navigateToAddPage() async {
     final route = MaterialPageRoute(
       builder: (context) => AddTodoPage(),
     );
-    Navigator.push(context, route);
+    await Navigator.push(context, route);
+    setState(() {
+      isLoading = true;
+    });
+    fetchTodo();
   }
 
   Future<void> deleteById(String id) async {
-    final url = "https://api.nstack.in/v1/todos$id";
+    final url = "https://api.nstack.in/v1/todos/$id";
     final uri = Uri.parse(url);
     final response = await http.delete(uri);
     if (response.statusCode == 200) {
@@ -87,7 +92,11 @@ class _TodoListPageState extends State<TodoListPage> {
       setState(() {
         items = filtered;
       });
-    } else {}
+      fetchTodo();
+      showSuccesMessage("Successfully deleted");
+    } else {
+      showErrorMessages("Deleteion Failed");
+    }
   }
 
   Future<void> fetchTodo() async {
@@ -104,7 +113,31 @@ class _TodoListPageState extends State<TodoListPage> {
     setState(() {
       isLoading = false;
     });
-    print(response.statusCode);
-    print(response.body);
+  }
+
+  Future<void> navigateToEditPage(Map item) async {
+    final route =
+        MaterialPageRoute(builder: (context) => AddTodoPage(todo: item));
+    await Navigator.push(context, route);
+    setState(() {
+      isLoading = true;
+    });
+    fetchTodo();
+  }
+
+  void showSuccesMessage(String message) {
+    final snackbar = SnackBar(content: Text(message));
+    ScaffoldMessenger.of(context).showSnackBar(snackbar);
+  }
+
+  void showErrorMessages(String message) {
+    final snackbar = SnackBar(
+      content: Text(
+        message,
+        style: TextStyle(color: Colors.white),
+      ),
+      backgroundColor: Colors.red,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackbar);
   }
 }
